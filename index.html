@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html">
+  <title>Custom Shopping Cart</title>
+  <!-- <link rel="stylesheet" type="text/css" media="all" href="css/styles.css"> -->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script> 
+  <script src = "https://ajax.aspnetcdn.com/ajax/knockout/knockout-3.1.0.js" type = "text/javascript"></script>
+<script>
+ /* var myHeaders = new Headers();
+  myHeaders.append("Cookie", "__cfduid=d5fa11d9fd141fa3e8f77a13800d380421602132657");
+
+  var requestOptions = {
+    method: 'GET',
+    headers: myHeaders,
+    redirect: 'follow'
+  };
+
+  fetch("https://api.jsonbin.io/b/5f6b6cd665b18913fc51f71f", requestOptions)
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.log('error', error));
+*/
+
+</script>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f1f1f1;
+  padding: 20px;
+  font-family: Arial;
+}
+
+/* Center website */
+.main {
+  max-width: 1000px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 50px;
+  word-break: break-all;
+}
+
+.row {
+  margin: 10px -16px;
+}
+
+/* Add padding BETWEEN each column */
+.row,
+.row > .column {
+  padding: 8px;
+}
+
+/* Create three equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 25%;
+  display: none; /* Hide all elements by default */
+}
+
+/* Clear floats after rows */ 
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Content */
+.content {
+  background-color: white;
+  padding: 10px;
+}
+
+/* The "show" class is added to the filtered elements */
+.show {
+  display: block;
+}
+
+/* Style the buttons */
+.btn {
+  border: none;
+  outline: none;
+  padding: 12px 16px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #ddd;
+}
+
+.btn.active {
+  background-color: #666;
+  color: white;
+}
+.pdt {
+  border: 0.3em solid #bbc3c6;
+  padding: 0.5em 0.3em; 
+  font-size: 1.4em;
+  color: #8a8a8a;
+  text-align: center;
+}
+</style>
+<script>
+var check = false;
+
+function changeVal(el) {
+  var qt = parseFloat(el.parent().children(".qt").html());
+  var price = parseFloat(el.parent().children(".price").html());
+  var eq = Math.round(price * qt * 100) / 100;
+  
+  el.parent().children(".full-price").html( eq + "€" );
+  
+  changeTotal();            
+}
+
+function changeTotal() {
+  
+  var price = 0;
+  
+  $(".full-price").each(function(index){
+    price += parseFloat($(".full-price").eq(index).html());
+  });
+  
+  price = Math.round(price * 100) / 100;
+  var tax = Math.round(price * 0.05 * 100) / 100
+  var shipping = parseFloat($(".shipping span").html());
+  var fullPrice = Math.round((price + tax + shipping) *100) / 100;
+  
+  if(price == 0) {
+    fullPrice = 0;
+  }
+  
+  $(".subtotal span").html(price);
+  $(".tax span").html(tax);
+  $(".total span").html(fullPrice);
+}
+
+$(document).ready(function(){
+  
+  $(".remove").click(function(){
+    var el = $(this);
+    el.parent().parent().addClass("removed");
+    window.setTimeout(
+      function(){
+        el.parent().parent().slideUp('fast', function() { 
+          el.parent().parent().remove(); 
+          if($(".product").length == 0) {
+            if(check) {
+              $("#cart").html("<h1>The shop does not function, yet!</h1><p>If you liked my shopping cart, please take a second and heart this Pen on <a href='https://codepen.io/ziga-miklic/pen/xhpob'>CodePen</a>. Thank you!</p>");
+            } else {
+              $("#cart").html("<h1>No products!</h1>");
+            }
+          }
+          changeTotal(); 
+        });
+      }, 200);
+  });
+  
+  $(".qt-plus").click(function(){
+    $(this).parent().children(".qt").html(parseInt($(this).parent().children(".qt").html()) + 1);
+    
+    $(this).parent().children(".full-price").addClass("added");
+    
+    var el = $(this);
+    window.setTimeout(function(){el.parent().children(".full-price").removeClass("added"); changeVal(el);}, 150);
+  });
+  
+  $(".qt-minus").click(function(){
+    
+    child = $(this).parent().children(".qt");
+    
+    if(parseInt(child.html()) > 1) {
+      child.html(parseInt(child.html()) - 1);
+    }
+    
+    $(this).parent().children(".full-price").addClass("minused");
+    
+    var el = $(this);
+    window.setTimeout(function(){el.parent().children(".full-price").removeClass("minused"); changeVal(el);}, 150);
+  });
+  
+  window.setTimeout(function(){$(".is-open").removeClass("is-open")}, 1200);
+  
+  $(".btn").click(function(){
+    check = true;
+    $(".remove").click();
+  });
+});
+
+
+
+
+/* Set rates + misc */
+var taxRate = 0.05;
+var shippingRate = 15.00; 
+var fadeTime = 300;
+
+
+/* Assign actions */
+$('.product-quantity input').change( function() {
+  updateQuantity(this);
+});
+
+$('.product-removal button').click( function() {
+  removeItem(this);
+});
+
+
+/* Recalculate cart */
+function recalculateCart()
+{
+  var subtotal = 0;
+  
+  /* Sum up row totals */
+  $('.product').each(function () {
+    subtotal += parseFloat($(this).children('.product-line-price').text());
+  });
+  
+  /* Calculate totals */
+  var tax = subtotal * taxRate;
+  var shipping = (subtotal > 0 ? shippingRate : 0);
+  var total = subtotal + tax + shipping;
+  
+  /* Update totals display */
+  $('.totals-value').fadeOut(fadeTime, function() {
+    $('#cart-subtotal').html(subtotal.toFixed(2));
+    $('#cart-tax').html(tax.toFixed(2));
+    $('#cart-shipping').html(shipping.toFixed(2));
+    $('#cart-total').html(total.toFixed(2));
+    if(total == 0){
+      $('.checkout').fadeOut(fadeTime);
+    }else{
+      $('.checkout').fadeIn(fadeTime);
+    }
+    $('.totals-value').fadeIn(fadeTime);
+  });
+}
+
+
+/* Update quantity */
+function updateQuantity(quantityInput)
+{
+  /* Calculate line price */
+  var productRow = $(quantityInput).parent().parent();
+  var price = parseFloat(productRow.children('.product-price').text());
+  var quantity = $(quantityInput).val();
+  var linePrice = price * quantity;
+  
+  /* Update line price display and recalc cart totals */
+  productRow.children('.product-line-price').each(function () {
+    $(this).fadeOut(fadeTime, function() {
+      $(this).text(linePrice.toFixed(2));
+      recalculateCart();
+      $(this).fadeIn(fadeTime);
+    });
+  });  
+}
+
+
+/* Remove item from cart */
+function removeItem(removeButton)
+{
+  /* Remove row from DOM and recalc cart total */
+  var productRow = $(removeButton).parent().parent();
+  productRow.slideUp(fadeTime, function() {
+    productRow.remove();
+    recalculateCart();
+  });
+}
+
+
+
+
+
+var data = {
+                    "items": [
+                    {
+                      "name": "Samsung Series 4",
+                      "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                      "price": {
+                        "actual": 13999,
+                        "display": 22500
+                      },
+                      "discount": 37
+                    },
+        {
+                        "name": "Samsung Super 6",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 35999,
+                            "display": 66900
+            },
+                        "discount": 46
+        },
+        {
+                        "name": "Samsung The Frame",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 84999,
+                            "display": 133900
+            },
+                        "discount": 36
+        },
+        {
+                        "name": "Thomson B9 Pro",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 9999,
+                            "display": 16999
+            },
+                        "discount": 41
+        },
+        {
+                        "name": "LG Ultra HD",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 39990,
+                            "display": 79990
+            },
+                        "discount": 50
+        },
+        {
+                        "name": "Vu Ready LED TV",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 7999,
+                            "display": 17e3
+            },
+                        "discount": 52
+        },
+        {
+                        "name": "Koryo Android TV",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 55999,
+                            "display": 199990
+            },
+                        "discount": 71
+        },
+        {
+                        "name": "Micromax LED Smart",
+                        "image": "https://rukminim1.flixcart.com/image/670/600/allinone-desktop/d/n/q/apple-imac-21-5-inch-4k-retina-core-i5-3-1ghz-8gb-1tb-intel-iris-original-imaeh5h83fuzbksz.jpeg?q=90",
+                        "price": {
+                            "actual": 9999,
+                            "display": 27990
+            },
+                        "discount": 64
+        }
+    ]
+}
+
+$(document).ready(function() {
+
+var html;
+ $.each(data,function(key,value){
+ $.each(value,function(key1,value1){
+   //console.log("name--"+value1.name);
+html = "<div><span style='background-color:lightgreen;''>"+value1.discount+" % off</span></div>"
+        +"<div style='margin-left: 50px;'>"
+          +"<img style='width:100px' src='"+value1.image+"'alt='X'>"
+        +"</div>"
+        +"<div style='background-color:gainsboro'>"
+        +"<div>"
+          +"<span 'id=name' style='color:grey'>"+value1.name+"</span>"
+        +"</div>"
+        +"<div style='width:250px'>"
+          +"<del style='color:red;text-decoration:line-through'>"
+            +"<span style='color:grey'>$"+value1.price.actual+"</span>"
+          +"</del>&nbsp;&nbsp"
+          +"<span id='price' style='color:black'>$"+value1.price.display+"</span>"
+          +"<button id='btnCart' oncli style='color: deepskyblue; border-color: deepskyblue; border-radius: 3px;margin-left: 36px;' >"
+          +"Add to cart"
+          +"</button>"
+        +"</div>"
+ $("#pdt").append(html)
+ })
+ })
+
+
+
+ $("#btnCart").click(function(){
+  name = $("#name").val();
+  price = $("#price").val()
+  console.log("name---"+name);
+  console.log("price---"+price);
+  var rowData = "<tr class='productitm'>"
+  +"<td colspan = '2' style='border: 1px solid gainsboro;''><span>"+name+"</span>"
+    +"<div class='product-removal'>"
+      +"<span class='remove-product'>  &nbsp;&nbsp;X</span>"
+    +"</div>"
+    +"</td>"
+    +"<td colspan='2'>&nbsp;</td>+"
+          +"<td colspan='2'>"
+            +"<span class='qt-minus'>-</span>"
+            +"<span style='border: 1px solid gainsboro;' class='qt'>1</span>"
+            +"<span class='qt-plus'>+</span>"
+            +"</td>"
+            +"<td colspan='2'>&nbsp;</td>"
+            +"<td class='product-line-price' colspan='2'>$ "+price+"</td>"
+            +"</tr>"
+            $("#cartItems").append(rowData)
+});
+
+
+});
+
+
+function updateCart(name,price){console.log("in ---"+name+"----"+price)
+  var rowData = "<tr class='productitm'>"
+  +"<td colspan = '2' style='border: 1px solid gainsboro;''><span>"+name+"</span>"
+    +"<div class='product-removal'>"
+      +"<span class='remove-product'>  &nbsp;&nbsp;X</span>"
+    +"</div>"
+    +"</td>"
+    +"<td colspan='2'>&nbsp;</td>+"
+          +"<td colspan='2'>"
+            +"<span class='qt-minus'>-</span>"
+            +"<span style='border: 1px solid gainsboro;' class='qt'>1</span>"
+            +"<span class='qt-plus'>+</span>"
+            +"</td>"
+            +"<td colspan='2'>&nbsp;</td>"
+            +"<td class='product-line-price' colspan='2'>$ "+price+"</td>"
+            +"</tr>"
+            document.getElementById("cartItems").appendChild(rowData);
+}
+
+
+</script>  
+
+</head>
+<body>
+<!-- MAIN (Center website) -->
+<div class="main">
+  <hr>
+  <div>
+    <div>
+      <h2>All Items</h2>
+    </div>
+    <div style="margin-left: 450px;">
+      <span style="color: white;background-color: lightgreen;"> Item2 is added to the cart</span>
+    </div>
+  </div>
+  
+  <hr>
+ 
+  
+  <div id="pdt" style="position: absolute;border: 1px solid gainsboro;"> 
+    </div>
+   
+
+  <div id="page">
+    <table id="cart" style="margin-left: 612px;" >
+      <thead>
+        <tr>
+          <th colspan="2" class="third"> <hr>Item <hr></th>
+          <th>&nbsp;</th>
+          <th colspan="2" class="second"> <hr>Qty <hr></th>
+          <th colspan="2">&nbsp;</th>
+          <th colspan="2" class="fourth"> <hr>Price <hr></th>
+          <th class="fifth">&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody id="cartItems">
+        <!-- shopping cart contents -->
+        <!-- <tr  class="productitm">
+         <td colspan="2" style="border: 1px solid gainsboro;"><span>Item1</span>
+          <span class="remove-product">  &nbsp;&nbsp;X</span>
+         </td>
+         <td colspan="2">&nbsp;</td>
+          <td colspan="2">
+            <span class="qt-minus">-</span>
+            <span style="border: 1px solid gainsboro;" class="qt">2</span>
+            <span class="qt-plus">+</span>
+          </td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2">$200.00</td>
+        </tr>
+       
+        <tr class="productitm">
+          <td colspan="2" style="border: 1px solid gainsboro;"><span>Item2</span>
+           <span class="remove">&nbsp;&nbsp;X</span>
+          </td>
+          <td colspan="2">&nbsp;</td>
+           <td colspan="2">
+             <span class="qt-minus">-</span>
+             <span style="border: 1px solid gainsboro;" class="qt">2</span>
+             <span class="qt-plus">+</span>
+           </td>
+           <td colspan="2">&nbsp;</td>
+           <td colspan="2">$250.00</td>
+         </tr> -->
+      </tbody>
+    </table>
+    <hr style="margin-left: 612px;">
+    <table style="border: 1px solid gainsboro;margin-left: 612px;">
+      <tbody>
+        <tr class="extracosts">
+          <td class="light">Total </td>
+          <td colspan="2" class="light"></td>
+          <td colspan="2">&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          &nbsp
+        </tr>
+        <tr class="extracosts">
+          
+          <td class="light">Items (2) </td>
+          <td colspan="2" class="light"></td>
+          <td colspan="2" class="light">:</td>
+          <td colspan="2">&nbsp;</td>
+          <td>$450.00</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr class="totalprice">
+          <td class="light">Discount</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2" class="light">:</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2"><span class="thick">-$57.5</span></td>
+        </tr>
+        <tr class="totalprice">
+          <td class="light">Type Discount</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2" class="light">:</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2"><span class="thick">-$0</span></td>
+        </tr>
+        <tr class="totalprice" style="background-color: gainsboro;">
+          <td class="light" >Order Total</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2" class="light">:</td>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2"><span class="thick">$392.5</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+<!-- END MAIN -->
+
+</div>
+
+
+
+</body>
+</html>
